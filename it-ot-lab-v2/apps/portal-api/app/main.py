@@ -74,7 +74,7 @@ async def services() -> List[Dict[str, Any]]:
     # Minimal static service registry for MVP
     services = [
         {"name": "portal-api", "url": "http://portal-api:8000/api/health", "zone": "CORE"},
-        {"name": "portal-ui", "url": "http://portal-ui:5173", "zone": "CORE"},
+        {"name": "portal-ui", "url": "http://localhost:5173", "zone": "CORE", "status": "ui"},
         {"name": "ot-sim", "url": f"{OT_SIM_URL}/health", "zone": "OT"},
         {"name": "prometheus", "url": "http://prometheus:9090/-/healthy", "zone": "CORE"},
         {"name": "grafana", "url": "http://grafana:3000/api/health", "zone": "CORE"},
@@ -84,6 +84,11 @@ async def services() -> List[Dict[str, Any]]:
     out = []
     async with httpx.AsyncClient(timeout=2.5) as client:
         for s in services:
+            # Skip health check for UI services (client-side only)
+            if s.get("status") == "ui":
+                out.append({**s, "status": "ui"})
+                continue
+            
             try:
                 r = await client.get(s["url"])
                 status = "up" if r.status_code < 400 else f"down({r.status_code})"
