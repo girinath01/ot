@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: portal-api
+    static_configs:
+      - targets: ["portal-api:8000"]
+
+  - job_name: ot-sim
+    static_configs:
+      - targets: ["ot-sim:9000"]

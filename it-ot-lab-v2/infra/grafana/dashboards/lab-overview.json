@@ -1,0 +1,38 @@
+{
+  "title": "Lab Overview (MVP)",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "OT Temperature (C)",
+      "targets": [{ "expr": "ot_temp_c" }],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "OT Pressure (bar)",
+      "targets": [{ "expr": "ot_pressure_bar" }],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "OT Flow (L/min)",
+      "targets": [{ "expr": "ot_flow_lpm" }],
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+    },
+    {
+      "type": "stat",
+      "title": "OT Events Total",
+      "targets": [{ "expr": "sum(ot_events_total)" }],
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 4 }
+    },
+    {
+      "type": "logs",
+      "title": "OT Logs (Loki)",
+      "targets": [{ "expr": "{service=\"ot-sim\"}" }],
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 10 }
+    }
+  ],
+  "time": { "from": "now-15m", "to": "now" }
+}
