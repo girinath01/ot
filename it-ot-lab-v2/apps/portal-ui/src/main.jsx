@@ -143,11 +143,7 @@ function MachineCard({ title, ip, difficulty, status, onStart, onStop, onRestart
   const liveTone = status === "up" || status === "ui" ? "green" : "red";
 
   return (
-<<<<<<< HEAD
-    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 hover-lift ${status === "up" ? "glow" : ""}`}>
-=======
-    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${status === "up" ? "neon-live" : ""}`}>
->>>>>>> 6bc279efa75ffa8fe049e90853f6f5e083d8e9d6
+    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${status === "up" ? "glow" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-white font-extrabold text-lg">{title}</div>
@@ -414,11 +410,10 @@ function App() {
                   {pwned ? <Badge tone="green">PWNED</Badge> : <Badge tone="neutral">LOCKED</Badge>}
                   <button
                     disabled={!pwned}
-                    className={`px-4 py-2 rounded-xl border transition text-sm ${
-                      pwned
+                    className={`px-4 py-2 rounded-xl border transition text-sm ${pwned
                         ? "bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/20 glow"
                         : "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
-                    }`}
+                      }`}
                     onClick={() => alert("✅ PWNED! All scenarios completed.")}
                   >
                     {pwned ? "Claim" : "Complete scenarios"}
