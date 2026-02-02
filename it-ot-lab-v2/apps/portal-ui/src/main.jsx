@@ -68,7 +68,7 @@ function App() {
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
         <a href="http://localhost:3000" target="_blank" rel="noreferrer">Open Grafana</a>
-        <a href="http://localhost:9090" target="_blank" rel="noreferrer">Open Prometheus</a>
+        <a href="http://localhost:9500" target="_blank" rel="noreferrer">Open Prometheus</a>
         <a href="http://localhost:3100/ready" target="_blank" rel="noreferrer">Loki Ready</a>
       </div>
 
