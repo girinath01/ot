@@ -8,24 +8,56 @@ function App() {
   const [runs, setRuns] = useState([]);
 
   async function refresh() {
-    const s = await fetch(`${API}/api/services`).then(r => r.json());
-    setServices(s);
-    const rr = await fetch(`${API}/api/runs`).then(r => r.json());
-    setRuns(rr.items || []);
+    try {
+      const servicesResponse = await fetch(`${API}/api/services`);
+      if (!servicesResponse.ok) {
+        throw new Error(`Failed to fetch services: ${servicesResponse.status} ${servicesResponse.statusText}`);
+      }
+      const s = await servicesResponse.json();
+      setServices(s);
+
+      const runsResponse = await fetch(`${API}/api/runs`);
+      if (!runsResponse.ok) {
+        throw new Error(`Failed to fetch runs: ${runsResponse.status} ${runsResponse.statusText}`);
+      }
+      const rr = await runsResponse.json();
+      setRuns(rr.items || []);
+    } catch (error) {
+      console.error("Failed to refresh data:", error);
+      setServices([]);
+      setRuns([]);
+      alert("Failed to load data from the server. Please try again later.");
+    }
   }
 
   async function runScenario(scenario_id) {
-    await fetch(`${API}/api/scenarios/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scenario_id })
-    });
-    refresh();
+    try {
+      const response = await fetch(`${API}/api/scenarios/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario_id })
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to run scenario: ${response.status} ${response.statusText}`);
+      }
+      await refresh();
+    } catch (error) {
+      console.error("Failed to run scenario:", error);
+      alert("Failed to run scenario. Please try again.");
+    }
   }
 
   async function resetScenario() {
-    await fetch(`${API}/api/scenarios/reset`, { method: "POST" });
-    refresh();
+    try {
+      const response = await fetch(`${API}/api/scenarios/reset`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Failed to reset scenario: ${response.status} ${response.statusText}`);
+      }
+      await refresh();
+    } catch (error) {
+      console.error("Failed to reset scenario:", error);
+      alert("Failed to reset scenario. Please try again.");
+    }
   }
 
   useEffect(() => { refresh(); }, []);
