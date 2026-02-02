@@ -74,7 +74,6 @@ async def services() -> List[Dict[str, Any]]:
     out = []
     async with httpx.AsyncClient(timeout=2.5) as client:
         for s in services:
-            status = "unknown"
             try:
                 r = await client.get(s["url"])
                 status = "up" if r.status_code < 400 else f"down({r.status_code})"
