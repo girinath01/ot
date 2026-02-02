@@ -27,11 +27,10 @@ function Sidebar({ tab, setTab }) {
   const Item = ({ id, label }) => (
     <button
       onClick={() => setTab(id)}
-      className={`w-full text-left px-3 py-2 rounded-xl transition ${
-        tab === id
-          ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 glow"
-          : "hover:bg-white/5 text-slate-200"
-      }`}
+      className={`w-full text-left px-3 py-2 rounded-xl transition ${tab === id
+        ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 glow"
+        : "hover:bg-white/5 text-slate-200"
+        }`}
     >
       {label}
     </button>
@@ -45,7 +44,7 @@ function Sidebar({ tab, setTab }) {
         </div>
         <div>
           <div className="text-white font-extrabold leading-tight">IT/OT LAB</div>
-          <div className="text-slate-400 text-xs">Hack The Box style UI</div>
+          <div className="text-slate-400 text-xs">Security Training Lab</div>
         </div>
       </div>
 
