@@ -47,7 +47,7 @@ function Sidebar({ tab, setTab }) {
   );
 
   return (
-    <div className="w-64 shrink-0 bg-[#0b0f14] border-r border-white/10 p-4">
+    <div className="w-64 shrink-0 bg-[#0b0f14] border-r border-white/10 p-4 animate-slide-in-left">
       <div className="flex items-center gap-3 mb-6">
         <div className="h-10 w-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 glow grid place-items-center">
           <span className="text-emerald-300 font-black">V2</span>
@@ -70,7 +70,7 @@ function Sidebar({ tab, setTab }) {
         <a className="block text-slate-300 hover:text-white" href="http://localhost:3000" target="_blank" rel="noreferrer">
           Open Grafana
         </a>
-        <a className="block text-slate-300 hover:text-white" href="http://localhost:9090" target="_blank" rel="noreferrer">
+        <a className="block text-slate-300 hover:text-white" href="http://localhost:9500" target="_blank" rel="noreferrer">
           Open Prometheus
         </a>
         <a className="block text-slate-300 hover:text-white" href="http://localhost:3100/ready" target="_blank" rel="noreferrer">
@@ -87,7 +87,7 @@ function Sidebar({ tab, setTab }) {
 
 function TopologyCard() {
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+    <div className="rounded-2xl bg-white/5 border border-white/10 p-5 animate-slide-up hover-lift">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-white font-bold">Network Topology</div>
@@ -96,8 +96,8 @@ function TopologyCard() {
         <Badge tone="blue">MVP</Badge>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-white/10 bg-[#0b1220] p-4">
+      <div className="mt-5 grid grid-cols-3 gap-4 stagger">
+        <div className="rounded-2xl border border-white/10 bg-[#0b1220] p-4 animate-slide-up">
           <div className="flex items-center justify-between">
             <div className="font-semibold text-white">IT Zone</div>
             <Badge tone="neutral">future</Badge>
@@ -143,7 +143,7 @@ function MachineCard({ title, ip, difficulty, status, onStart, onStop, onRestart
   const liveTone = status === "up" || status === "ui" ? "green" : "red";
 
   return (
-    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${status === "up" ? "glow" : ""}`}>
+    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 hover-lift ${status === "up" ? "glow" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-white font-extrabold text-lg">{title}</div>
