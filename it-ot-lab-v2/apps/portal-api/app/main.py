@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
@@ -14,6 +15,15 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 OT_SIM_URL = os.getenv("OT_SIM_URL", "http://ot-sim:9000")
 
 app = FastAPI(title="Portal API", version="0.1.0")
+
+# Configure CORS to allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins like ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 REQ_COUNT = Counter("portal_requests_total", "Total HTTP requests", ["path", "method", "status"])
 LAST_SCENARIO = Gauge("portal_last_scenario_mode", "Last requested scenario mode as numeric label", ["mode"])
