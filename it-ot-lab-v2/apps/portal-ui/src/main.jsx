@@ -143,7 +143,7 @@ function MachineCard({ title, ip, difficulty, status, onStart, onStop, onRestart
   const liveTone = status === "up" || status === "ui" ? "green" : "red";
 
   return (
-    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${status === "up" ? "glow" : ""}`}>
+    <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${status === "up" ? "neon-live" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-white font-extrabold text-lg">{title}</div>
@@ -191,6 +191,18 @@ function App() {
   const [services, setServices] = useState([]);
   const [runs, setRuns] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [machineQuery, setMachineQuery] = useState("");
+  const [activity, setActivity] = useState([]);
+  const [activityService, setActivityService] = useState("ot-sim");
+
+  const machines = useMemo(
+    () => ([
+      { id: "ot-sim", title: "OT-SIM", difficulty: "Easy", tags: ["OT", "Telemetry"], ip: "172.18.x.x" },
+      { id: "grafana", title: "Telemetry Stack", difficulty: "Medium", tags: ["Grafana", "Loki", "Prometheus"], ip: "localhost" },
+      { id: "portal-api", title: "Portal API", difficulty: "Easy", tags: ["Control Plane"], ip: "172.18.x.x" },
+    ]),
+    []
+  );
 
   const zones = useMemo(() => {
     const z = { CORE: 0, OT: 0, DMZ: 0, IT: 0 };
@@ -210,6 +222,8 @@ function App() {
       setServices(s);
       const rr = await fetch(`${API}/api/runs`).then((r) => r.json());
       setRuns(rr.items || []);
+      const act = await fetch(`${API}/api/activity?limit=30&service=${encodeURIComponent(activityService)}`).then((r) => r.json());
+      setActivity(act.items || []);
     } finally {
       setBusy(false);
     }
@@ -236,7 +250,7 @@ function App() {
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [activityService]);
 
   const completed = useMemo(() => {
     const set = new Set();
@@ -253,6 +267,19 @@ function App() {
     const done = completed.size;
     return total === 0 ? 0 : Math.round((done / total) * 100);
   }, [completed]);
+
+  const pwned = useMemo(() => completed.size === COMPLETION_SCENARIOS.length, [completed]);
+
+  const filteredMachines = useMemo(() => {
+    const q = machineQuery.trim().toLowerCase();
+    if (!q) return machines;
+    return machines.filter(
+      (m) =>
+        m.title.toLowerCase().includes(q) ||
+        m.id.toLowerCase().includes(q) ||
+        m.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [machines, machineQuery]);
 
   const statusBadge = (status) => {
     if (status === "ui") return <Badge tone="blue">ui</Badge>;
@@ -374,6 +401,27 @@ function App() {
                 </div>
               </div>
 
+              <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <div className="text-white font-bold">Machine Status</div>
+                  <div className="text-slate-400 text-sm">Unlocks when all scenarios are completed</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {pwned ? <Badge tone="green">PWNED</Badge> : <Badge tone="neutral">LOCKED</Badge>}
+                  <button
+                    disabled={!pwned}
+                    className={`px-4 py-2 rounded-xl border transition text-sm ${
+                      pwned
+                        ? "bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/20 glow"
+                        : "bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
+                    }`}
+                    onClick={() => alert("✅ PWNED! All scenarios completed.")}
+                  >
+                    {pwned ? "Claim" : "Complete scenarios"}
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -383,32 +431,66 @@ function App() {
                   <Badge tone="blue">MVP</Badge>
                 </div>
 
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 md:col-span-6">
-                    <MachineCard
-                      title="OT-SIM"
-                      ip="172.18.x.x"
-                      difficulty="Easy"
-                      status={services.find((s) => s.name === "ot-sim")?.status || "unknown"}
-                      tags={["OT", "Telemetry"]}
-                      onStart={() => svcAction("ot-sim", "start")}
-                      onStop={() => svcAction("ot-sim", "stop")}
-                      onRestart={() => svcAction("ot-sim", "restart")}
-                    />
-                  </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <input
+                    value={machineQuery}
+                    onChange={(e) => setMachineQuery(e.target.value)}
+                    placeholder="Search machines (ot, grafana, telemetry...)"
+                    className="w-full md:w-[420px] px-4 py-2 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-emerald-500/30"
+                  />
+                  <Badge tone="blue">{filteredMachines.length} shown</Badge>
+                </div>
 
-                  <div className="col-span-12 md:col-span-6">
-                    <MachineCard
-                      title="Telemetry Stack"
-                      ip="localhost"
-                      difficulty="Medium"
-                      status={services.find((s) => s.name === "grafana")?.status || "unknown"}
-                      tags={["Grafana", "Loki", "Prometheus"]}
-                      onStart={() => svcAction("grafana", "start")}
-                      onStop={() => svcAction("grafana", "stop")}
-                      onRestart={() => svcAction("grafana", "restart")}
-                    />
+                <div className="grid grid-cols-12 gap-4 mt-4">
+                  {filteredMachines.map((m) => (
+                    <div key={m.id} className="col-span-12 md:col-span-6">
+                      <MachineCard
+                        title={m.title}
+                        ip={m.ip}
+                        difficulty={m.difficulty}
+                        tags={m.tags}
+                        status={services.find((s) => s.name === m.id)?.status || "unknown"}
+                        onStart={() => svcAction(m.id, "start")}
+                        onStop={() => svcAction(m.id, "stop")}
+                        onRestart={() => svcAction(m.id, "restart")}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-5">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <div className="text-white font-bold">Activity Feed</div>
+                    <div className="text-slate-400 text-sm">Live logs from Loki (last 10 minutes)</div>
                   </div>
+                  <select
+                    value={activityService}
+                    onChange={(e) => setActivityService(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+                  >
+                    <option value="ot-sim">ot-sim</option>
+                    <option value="portal-api">portal-api</option>
+                    <option value="prometheus">prometheus</option>
+                    <option value="grafana">grafana</option>
+                    <option value="loki">loki</option>
+                  </select>
+                </div>
+
+                <div className="mt-4 max-h-[320px] overflow-auto rounded-xl border border-white/10 bg-[#0b1220]">
+                  {activity.length === 0 ? (
+                    <div className="p-4 text-slate-400 text-sm">No logs yet. Run a scenario and refresh.</div>
+                  ) : (
+                    <ul className="divide-y divide-white/5">
+                      {activity.map((a, idx) => (
+                        <li key={idx} className="p-3">
+                          <div className="text-slate-400 text-[11px] font-mono">{a.ts}</div>
+                          <div className="text-slate-200 text-sm font-mono break-words">{a.line}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
             </div>
