@@ -64,6 +64,7 @@ function Sidebar({ tab, setTab }) {
         <Item id="services" label="Services" />
         <Item id="scenarios" label="Scenarios" />
         <Item id="runs" label="Runs" />
+        <Item id="validation" label="Validation" />
       </div>
 
       <div className="mt-6 pt-6 border-t border-white/10 space-y-2 text-sm">
@@ -194,6 +195,7 @@ function App() {
   const [machineQuery, setMachineQuery] = useState("");
   const [activity, setActivity] = useState([]);
   const [activityService, setActivityService] = useState("ot-sim");
+  const [validation, setValidation] = useState(null);
 
   const machines = useMemo(
     () => ([
@@ -224,6 +226,8 @@ function App() {
       setRuns(rr.items || []);
       const act = await fetch(`${API}/api/activity?limit=30&service=${encodeURIComponent(activityService)}`).then((r) => r.json());
       setActivity(act.items || []);
+      const v = await fetch(`${API}/api/validate`).then((r) => r.json());
+      setValidation(v);
     } finally {
       setBusy(false);
     }
@@ -240,6 +244,23 @@ function App() {
 
   async function resetScenario() {
     await fetch(`${API}/api/scenarios/reset`, { method: "POST" });
+    refresh();
+  }
+
+  async function downloadReport() {
+    const data = await fetch(`${API}/api/report`).then((r) => r.json());
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "it-ot-lab-report.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function resetLab() {
+    if (!confirm("Reset lab? This clears run history and resets scenarios.")) return;
+    await fetch(`${API}/api/lab/reset`, { method: "POST" });
     refresh();
   }
 
@@ -631,6 +652,68 @@ function App() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {tab === "validation" && (
+            <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <div className="text-white font-bold">Scenario Validation</div>
+                  <div className="text-slate-400 text-sm">Auto-detect expected signals from Loki logs</div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={downloadReport}
+                    className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/20 transition"
+                  >
+                    Download Report
+                  </button>
+                  <button
+                    onClick={resetLab}
+                    className="px-4 py-2 rounded-xl bg-red-500/15 border border-red-500/30 hover:bg-red-500/20 transition"
+                  >
+                    Reset Lab
+                  </button>
+                </div>
+              </div>
+
+              {!validation ? (
+                <div className="mt-4 text-slate-400 text-sm">Loading validation...</div>
+              ) : (
+                <div className="mt-5 overflow-x-auto rounded-xl border border-white/10 bg-[#0b1220]">
+                  <table className="w-full text-sm">
+                    <thead className="text-slate-400 text-xs">
+                      <tr>
+                        <th className="text-left px-5 py-3">Scenario</th>
+                        <th className="text-left px-5 py-3">Detected</th>
+                        <th className="text-left px-5 py-3">Expected Signals</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {Object.entries(validation.results || {}).map(([k, v]) => (
+                        <tr key={k} className="hover:bg-white/5 transition">
+                          <td className="px-5 py-3 font-semibold text-white">{k}</td>
+                          <td className="px-5 py-3">
+                            {v.detected ? <Badge tone="green">Detected</Badge> : <Badge tone="neutral">Not yet</Badge>}
+                          </td>
+                          <td className="px-5 py-3 text-slate-200">
+                            <ul className="list-disc ml-5 space-y-1">
+                              {(v.signals || []).map((s) => <li key={s}>{s}</li>)}
+                            </ul>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {validation && (
+                <div className="mt-4 text-slate-400 text-sm">
+                  Completed: <span className="text-emerald-300 font-semibold">{validation.count}</span>/4
+                </div>
+              )}
             </div>
           )}
         </main>
