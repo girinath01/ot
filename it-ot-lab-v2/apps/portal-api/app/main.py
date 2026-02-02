@@ -3,6 +3,7 @@ import time
 import json
 from typing import List, Dict, Any
 
+import docker
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ LAST_SCENARIO = Gauge("portal_last_scenario_mode", "Last requested scenario mode
 MODE_MAP = {"normal": 0, "sensor_drift": 1, "valve_stuck": 2, "comms_jitter": 3, "rogue_device": 4}
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+docker_client = docker.from_env()
 
 def jlog(event_type: str, message: str, **fields: Any) -> None:
     payload = {
@@ -135,3 +137,33 @@ def runs():
     with engine.begin() as conn:
         rows = conn.execute(text("SELECT id, scenario_id, status, created_at FROM scenario_runs ORDER BY id DESC LIMIT 50")).mappings().all()
     return {"items": list(rows)}
+
+@app.post("/api/services/{service_name}/start")
+def start_service(service_name: str):
+    try:
+        c = docker_client.containers.get(f"it-ot-lab-v2-{service_name}-1")
+        c.start()
+        jlog("svc_start", "service started", service=service_name)
+        return {"ok": True, "service": service_name, "action": "start"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/services/{service_name}/stop")
+def stop_service(service_name: str):
+    try:
+        c = docker_client.containers.get(f"it-ot-lab-v2-{service_name}-1")
+        c.stop(timeout=3)
+        jlog("svc_stop", "service stopped", service=service_name)
+        return {"ok": True, "service": service_name, "action": "stop"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/services/{service_name}/restart")
+def restart_service(service_name: str):
+    try:
+        c = docker_client.containers.get(f"it-ot-lab-v2-{service_name}-1")
+        c.restart(timeout=3)
+        jlog("svc_restart", "service restarted", service=service_name)
+        return {"ok": True, "service": service_name, "action": "restart"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
