@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, text
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 OT_SIM_URL = os.getenv("OT_SIM_URL", "http://ot-sim:9000")
+LOKI_URL = os.getenv("LOKI_URL", "http://loki:3100")
 
 app = FastAPI(title="Portal API", version="0.1.0")
 
@@ -137,6 +138,35 @@ def runs():
     with engine.begin() as conn:
         rows = conn.execute(text("SELECT id, scenario_id, status, created_at FROM scenario_runs ORDER BY id DESC LIMIT 50")).mappings().all()
     return {"items": list(rows)}
+
+@app.get("/api/activity")
+async def activity(limit: int = 30, service: str = "ot-sim"):
+    query = f'{{service="{service}"}}'
+    end_ns = int(time.time() * 1e9)
+    start_ns = end_ns - int(10 * 60 * 1e9)
+
+    params = {
+        "query": query,
+        "start": str(start_ns),
+        "end": str(end_ns),
+        "limit": str(limit),
+        "direction": "BACKWARD",
+    }
+
+    async with httpx.AsyncClient(timeout=4.0) as client:
+        r = await client.get(f"{LOKI_URL}/loki/api/v1/query_range", params=params)
+        r.raise_for_status()
+        data = r.json()
+
+    items = []
+    result = data.get("data", {}).get("result", [])
+    for stream in result:
+        labels = stream.get("stream", {})
+        for ts, line in stream.get("values", []):
+            items.append({"ts": ts, "labels": labels, "line": line})
+
+    items.sort(key=lambda x: x["ts"], reverse=True)
+    return {"items": items[:limit]}
 
 @app.post("/api/services/{service_name}/start")
 def start_service(service_name: str):
