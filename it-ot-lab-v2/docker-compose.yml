@@ -1,0 +1,94 @@
+name: it-ot-lab-v2
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: lab
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [core]
+    profiles: ["core", "full"]
+
+  portal-api:
+    build: ./apps/portal-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://lab:lab@postgres:5432/lab
+      OT_SIM_URL: http://ot-sim:9000
+    depends_on: [postgres]
+    ports:
+      - "8000:8000"
+    networks: [core, lab]
+    profiles: ["core", "full"]
+
+  ot-sim:
+    build: ./apps/ot-sim
+    environment:
+      DATABASE_URL: postgresql+psycopg://lab:lab@postgres:5432/lab
+      OT_ZONE: OT
+    depends_on: [postgres]
+    ports:
+      - "9000:9000"
+    networks: [lab]
+    profiles: ["lab", "full"]
+
+  portal-ui:
+    build: ./apps/portal-ui
+    environment:
+      VITE_API_BASE: http://localhost:8000
+    ports:
+      - "5173:5173"
+    networks: [core]
+    profiles: ["core", "full"]
+
+  # -------- Telemetry (metrics + logs) --------
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks: [core, lab]
+    profiles: ["telemetry", "full"]
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./infra/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    ports:
+      - "3100:3100"
+    networks: [core, lab]
+    profiles: ["telemetry", "full"]
+
+  promtail:
+    image: grafana/promtail:latest
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+    networks: [core, lab]
+    profiles: ["telemetry", "full"]
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks: [core, lab]
+    profiles: ["telemetry", "full"]
+
+networks:
+  core:
+  lab:
+
+volumes:
+  pgdata:
